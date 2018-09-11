@@ -1,0 +1,24 @@
+{
+  "name": "bkbg-conf-scheduler",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "convert": "node convert.js",
+    "time": "node time-gen.js",
+    "group": "node group.js",
+    "start": "node index.js",
+    "output": "node output.js",
+    "test": "node test.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "csvtojson": "^1.1.7",
+    "fast-csv": "^2.4.0",
+    "file-system": "^2.2.2",
+    "jsonfile": "^4.0.0",
+    "lodash": "^4.17.10",
+    "moment": "^2.22.2"
+  }
+}
