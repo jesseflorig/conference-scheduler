@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "build": "node convert.js && node time-gen.js && node group.js && node index.js && node output.js && node output2.js && echo 'Finished!'",
     "convert": "node convert.js",
     "time": "node time-gen.js",
     "group": "node group.js",

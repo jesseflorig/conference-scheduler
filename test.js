@@ -1,10 +1,11 @@
+const year = "2018"
 const _ = require('lodash');
-const vendors = require('./data/vendors');
-const members = require('./data/members');
-const timeSlots = require('./data/time-slots');
-const masterJson = require('./output/master-schedule');
+const vendors = require(`./data/${year}/vendors`);
+const members = require(`./data/${year}members`);
+const timeSlots = require(`./data/${year}/time-slots`);
+const masterJson = require(`./output/${year}/master-schedule`);
 const sortedSchedule = _.sortBy(masterJson, ['timecode'],['asc']);
-const groups = require('./data/groups');
+const groups = require(`./data/${year}/groups`);
 const opts = [
   // 'timecode',
   'time',

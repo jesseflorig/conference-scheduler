@@ -1,14 +1,15 @@
+const year = "2018"
 const _ = require('lodash');
 const fs = require('file-system');
-var csv = require("fast-csv");
+const csv = require("fast-csv");
 const jsonfile = require('jsonfile');
-const masterJson = require('./output/master-schedule');
+//const masterJson = require(`./output/${year}/master-schedule`);
 
-const schedJson = 'output/master-schedule.json';
+const schedJson = `output/${year}/master-schedule.json`;
 
-// converMasterScheduleToJSON();
-exportMasterVendorSchedule(masterJson);
-exportMasterMemberSchedule(masterJson);
+converMasterScheduleToJSON();
+//exportMasterVendorSchedule(masterJson);
+//exportMasterMemberSchedule(masterJson);
 // testMember(masterJson,'Carmike Kitchens');
 // testVendor(masterJson,'BKBG');
 
@@ -57,7 +58,7 @@ function exportMasterMemberSchedule(schedule){
     }
   });
   // console.log(output);
-  writeCSV('output/master-member-schedule.csv', `${headerLine}\n${output}${outputLine}`);
+  writeCSV(`output/${year}/master-member-schedule.csv`, `${headerLine}\n${output}${outputLine}`);
 }
 
 function exportMasterVendorSchedule(schedule){
@@ -84,7 +85,7 @@ function exportMasterVendorSchedule(schedule){
       outputLine += `${timeSlot.time},"${timeSlot.member1}","${timeSlot.member2}",`;
     }
   });
-  writeCSV('output/master-vendor-schedule.csv',`${headerLine}\n${output}${outputLine}`);
+  writeCSV(`output/${year}/master-vendor-schedule.csv`,`${headerLine}\n${output}${outputLine}`);
 }
 
 function writeCSV(path, data){
@@ -101,12 +102,12 @@ function converMasterScheduleToJSON(){
   var headers = true;
   var keyList = [];
   var output = []
-  const stream = fs.createReadStream("./output/master-schedule.csv");
+  const stream = fs.createReadStream(`./output/${year}/master-schedule.csv`);
   const csvStream = csv()
       .on("data", function(data){
            if(headers){
              keyList = data;
-             console.log(keyList);
+             //console.log(keyList);
            }
            else {
              var item = {}
