@@ -8,7 +8,7 @@ const groupPairs = require(`./data/${year}/groups`);
 const schedule = require(`./data/${year}/time-slots`);
 
 const masterSched = `data/${year}/master-schedule.json`;
-const sortedVendors = _.sortBy(vendors, 'seq');
+const sortedVendors = _.sortBy(vendors, 'seq').reverse();
 //console.log('sorted vendors',sortedVendors);
 genMasterSched(sortedVendors);
 
@@ -31,8 +31,19 @@ function genMasterSched(vendors){
             const nullPair = [{"name":""},{"name":""}];
             const offset = vendorOffset + groupTimeOffset[groupOffset];
             const vendorMax = vendors.length;
-            const pairOffset = (offset) % vendorMax;
-            const pair = currentGroup.pairs[pairOffset] || nullPair;
+            const pairOffset = offset % vendorMax;
+
+            const pair = (
+              (groupTimeOffset[groupOffset] < vendorMax ) &&
+              (currentGroup.pairs[pairOffset])
+            )? currentGroup.pairs[pairOffset]  : nullPair;
+            /*const pair = currentGroup.pairs[pairOffset] || nullPair;
+            if(
+              pair[0].name == "Allied Kitchen & Bath" &&
+              vendor.booth == 306
+            ){
+              console.log(vendorOffset, groupTimeOffset[groupOffset], pairOffset, offset, vendorMax);
+            }*/
 
             output += `${timeSlot.timeCode},"${day.date}",${timeSlot.time},"${vendor.name}",${vendor.booth},${vendor.seq},${group.name},"${pair[0].name}","${pair[1].name}"\n`; // Write line
           });
