@@ -1,11 +1,12 @@
-const year = "2018"
 const _ = require('lodash');
 const fs = require('file-system');
 const jsonfile = require('jsonfile');
-const vendors = require(`./data/${year}/vendors`);
-const regions = require(`./data/${year}/regions`);
-const groupPairs = require(`./data/${year}/groups`);
-const schedule = require(`./data/${year}/time-slots`);
+const dataPath = require("/Users/jesse/Dropbox/Documents/BKBG/Rotations")
+const year = "2019"
+const vendors = require(`${dataPath}/${year}/vendors`);
+const regions = require(`./regions`);
+const groupPairs = require(`${dataPath}/${year}/groups`);
+const schedule = require(`${dataPath}/${year}/time-slots`);
 
 const masterSched = `data/${year}/master-schedule.json`;
 const sortedVendors = _.sortBy(vendors, 'seq').reverse();
