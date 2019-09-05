@@ -1,93 +1,89 @@
-const year = "2018";
-const _ = require('lodash');
-const jsonfile = require('jsonfile');
-const vendors = require(`./data/${year}/vendors`);
-const members = require(`./data/${year}/members`);
-const regions = require(`./data/${year}/regions`);
-const memberMods = require(`./data/${year}/member-mods-${year}`);
-const forceGroups = require(`./data/${year}/member-mods-${year}-2`);
+// Step 3 of 6: Generate member pairings and groups
 
-const groupsJson = `data/${year}/groups.json`;
+const jsonfile = require('jsonfile');
+const { difference, each, filter, find, flatten, map } = require('lodash');
+
+const write = true
+const dataPath = "/Users/jesse/Dropbox/Documents/BKBG/Rotations"
+const year = "2019";
+const regions = require(`./regions`);
+const vendors = require(`${dataPath}/${year}/vendors`);
+const members = require(`${dataPath}/${year}/members`);
+const memberMods = require(`${dataPath}/${year}/member-mods`);
+
+const groupsPath = `${dataPath}/${year}/groups.json`;
 
 var assignedMembers = [];
 var groups = [
   { name: "A", pairs: {} },
-  { name: "B", pairs: {} }
 ];
 
 /* Assign mod members members */
-_.each(memberMods, pair => {
-  const member = getMemberByName(pair[0]);
-  const secondMember = getMemberByName(pair[1]);
-  groups[0].pairs[groupPairIdx(0)] = [member, secondMember];
+each(memberMods, pair => {
+  const member1 = getMemberByAttr("id", pair[0]);
+  const member2 = getMemberByAttr("id", pair[1]);
+  groups[0].pairs[groupPairIdx(0)] = [member1, member2];
 });
 
-console.log('done mod 1');
-
-forceGroup(forceGroups["A"], 0);
-forceGroup(forceGroups["B"], 1);
-
-function forceGroup(members, groupIdx) {
-  _.each(members, name => {
-    const member = getMemberByName(name);
-    const secondMember = findPair(member);
-    groups[groupIdx].pairs[groupPairIdx(groupIdx)] = [member,secondMember];
-  });
-}
-
-console.log('done mod 2');
+console.log('Finished member mods.');
 
 /* Assign everyone else */
-//while(assignedMembers < members){
-while(_.intersection(assignedMembers,members) != members){
-  const groupIdx = getSmallestGroupIdx(groups);
+while(assignedMembers.length < members.length){
+  const groupIdx = groups.length > 1 ? getSmallestGroupIdx(groups) : 0;
   const firstMember = getMember();
   if(!firstMember){ break; }
   const secondMember = findPair(firstMember);
   groups[groupIdx].pairs[groupPairIdx(groupIdx)] = [firstMember,secondMember];
 }
 
-jsonfile.writeFile(groupsJson, groups, function (err) {
-  console.error(err)
-})
-console.log('Done creating groups!')
+if(write){
+  jsonfile.writeFile(groupsPath, groups, function (err) {
+    err && console.error(`Error: ${err}`)
+  })
+  console.log('Done creating groups!')
+} else {
+  console.log(groups)
+  console.log(`Created ${groups.length} groups`)
+  const firstGroup = groups[0]
+  console.log(`Group ${firstGroup.name} has ${Object.keys(firstGroup.pairs).length} pairs`)
+}
 
 function getMember(){
-  const leftMembers = _.difference(members, assignedMembers);
+  const leftMembers = difference(members, assignedMembers);
   const newMember = leftMembers[0];
   assignedMembers.push(newMember);
   return newMember;
 }
 
-function getMemberByName(name){
-  const newMember = _.find(members, {"name": name});
+function getMemberByAttr(key, val){
+  const nullMember = {name: ""}
+  const newMember = val ? find(members, [key, val]) : nullMember;
+  // console.log("DEBUG:",key, val, members.length, members[0], newMember)
   assignedMembers.push(newMember);
-  console.log('grouping',name);
+  // console.log(`Grouping: ${newMember.name} (${newMember.id})`);
   return newMember;
 }
 
 function findPair(member){
-  const region = _.flatten(_.map(regions, (region) => {
-    return region.includes(member.state)? region : [];
+  const states = flatten(map(regions, region => {
+    return region.states.includes(member.state) ? region.states : [];
   }));
   /* Member pair cannot be from the same region */
-  const leftMembers = _.difference(members, assignedMembers);
-  const validMembers = _.filter(leftMembers, (mbr) => {
-    return !region.includes(mbr.state);
+  const leftMembers = difference(members, assignedMembers);
+  const validMembers = filter(leftMembers, (mbr) => {
+    return !states.includes(mbr.state);
   });
   const newMember = validMembers[0];
   assignedMembers.push(newMember);
-  return newMember || { name: "None", state: null };
+  return newMember || { id: null, name: "None", state: null };
 }
 
 function groupPairIdx(idx){
-  //console.log(idx,'pair count',Object.keys(groups[idx].pairs).length);
   return Object.keys(groups[idx].pairs).length;
 }
 
 function getSmallestGroupIdx(groups){
   const a = Object.keys(groups[0].pairs).length;
   const b = Object.keys(groups[1].pairs).length;
-  //console.log('a',a,'b',b,'=',(a > b)+0);
   return (a > b)+0;
 }

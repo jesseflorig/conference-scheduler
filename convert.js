@@ -1,147 +1,92 @@
-const year = "2018";
-const csv = require('csvtojson');
-const jsonfile = require('jsonfile');
-const _ = require('lodash');
-const memberMods = require(`./data/${year}/member-mods-${year}`);
+// Step 1 of 6: Convert attendees CSV to Vendor and Member JSON
 
-const attendeePath = `data/${year}/attendees-${year}.csv`;
-const vendorPath = `data/${year}/vendors-${year}.csv`;
-const memberPath = `data/${year}/members-${year}.csv`;
-const vendorJson = `data/${year}/vendors.json`;
-const memberJson = `data/${year}/members.json`;
+const dataPath = "/Users/jesse/Dropbox/Documents/BKBG/Rotations"
+const year = "2019";
+const fs = require("fs")
+const csv = require("csvtojson");
+const jsonfile = require("jsonfile");
+const _ = require("lodash");
 
-/* 2017 /
-const boothSeq = [
-  "109","107","105","103","101","100","102","104","108","110",
-  "209","207","203","201","202","204","208","210",
-  "309","307","303","301","302","304","308","310",
-  "409","407","403","401","402","404","408","410",
-  "509","507","503","501","500","502","506","508",
-  "214","213","114"
-];
-*/
+// File paths
+const boothPath = `${dataPath}/${year}/booths.json`;
+const attendeePath = `${dataPath}/${year}/attendees.csv`;
+const vendorOutPath = `${dataPath}/${year}/vendors.json`;
+const memberOutPath = `${dataPath}/${year}/members.json`;
 
-boothSeq = [
-  "101","105","111","113","115","116","114","112","106","104","102",
-  "201","203","205","211","213","215","216","214","212","206","204","202",
-  "301","303","305","311","313","315","316","314","312","306","304","302",
-  "401","403","405","411","413","415","414","412","406","404","402"
-]
+const boothData = fs.readFileSync(boothPath,"utf-8")
+const boothSeq = JSON.parse(boothData)
 
 convertAttendees(attendeePath);
-//convertVendor(vendorPath, boothSeq, vendorJson);
-//convertMember(memberPath, memberJson);
 
 function convertAttendees(attendeePath){
-  var vendorCount = 0;
-  var memberCount = 0;
-  var vendorOut = [];
-  var memberOut = [];
+  const write = true
+  let vendorCount = 0;
+  let memberCount = 0;
+  const vendors = [];
+  const members = [];
 
   csv()
     .fromFile(attendeePath)
-    .on('json',(jsonObj)=>{
+    .on("json",(jsonObj)=>{
       //console.log(jsonObj);
-      var isVendor = jsonObj['Member Type'] === 'Vendor';
-      var srcKeys = isVendor ? ['Company', 'Booth#'] : ['Company', 'State'];
-      var destKeys = isVendor ? ['name', 'booth'] : ['name', 'state'];
-      var jsonStrip = _.pick(jsonObj, srcKeys);
-      var jsonClean = {};
+      const isVendor = jsonObj["Member Type"] === "Vendor";
+      const srcTypeKeys = isVendor ? ["Company", "Booth#"] : ["Company", "State"];
+      const srcDestKeys = isVendor ? ["name", "booth"] : ["name", "state"];
+      const srcKeys = ["Company ID", ...srcTypeKeys]
+      const destKeys = ["id" , ...srcDestKeys]
+
+      const jsonStrip = _.pick(jsonObj, srcKeys);
+      const jsonClean = {};
 
       _.each(srcKeys, (key, idx) => {
         jsonClean[destKeys[idx]] = jsonStrip[key]
       })
 
       if(isVendor){
-        jsonClean['seq'] = _.findIndex(boothSeq, (item)=>{
-          return item == jsonObj['Booth#'];
+        jsonClean["seq"] = _.findIndex(boothSeq, (item)=>{
+          return item == jsonObj["Booth#"];
         });
-
-        vendorOut.push(jsonClean);
+        // console.log(`Vendor: ${JSON.stringify(jsonClean)}`)
+        vendors.push(jsonClean);
       } else {
-        memberOut.push(jsonClean);
+        members.push(jsonClean);
       }
 
-    }).on('done', () => {
+    }).on("done", () => {
       /* 2018 should be 117 members; 43 vendors */
+      /* 2019 should be  123 members; 40 vendors */
+      const uniqKey = "id"
+      const vendorOut = _.uniqBy(vendors, uniqKey);
+      const memberOut = _.uniqBy(members, uniqKey);
 
-      vendorOut = _.uniqBy(vendorOut, 'name');
-      jsonfile.writeFile(vendorJson, vendorOut, function (err) {
-        console.error(err)
-      });
-      console.log('Done converting',vendorOut.length,'vendors!')
+      // Vendor count needs to be greater than or equal to 
+      // largest group members divided by 2 (rounded up)
+      // If needed pad vendors with empty booths
+      // IMPORTANT: currently only works with a single group
+      const vendorCount = vendorOut.length
+      const memberCount = memberOut.length
+      const padVendor = { "id": null, "name": "", "booth": ""}
+      const padCount = Math.ceil(memberCount / 2) - vendorCount
 
-      memberOut = _.uniqBy(memberOut, 'name');
-      jsonfile.writeFile(memberJson, memberOut, function (err) {
-        console.error(err)
-      });
-      console.log('Done converting',memberOut.length,'members!')
+      for (let i = 0; i < padCount; i++){
+        vendorOut.push(padVendor)
+      }
 
+      if(write){
+        // Write out vendors json
+        jsonfile.writeFile(vendorOutPath, vendorOut, function (err) {
+          err && console.error(`Error ${err}`)
+        });
+        console.log(`Done converting ${vendorCount} (+${padCount}) vendors!`)
+
+        // Write out members json
+        jsonfile.writeFile(memberOutPath, memberOut, function (err) {
+          err && console.error(`Error ${err}`)
+        });
+        console.log(`Done converting ${memberCount} members!`)
+      } else {
+        console.log("Skipping write...")
+        console.log(`Vendors: ${vendorCount} (+${padCount}), Members: ${memberCount}`)
+      }
     });
-}
-
-function convertVendor(vendorPath, boothSeq, vendorJson){
-  var vendorOut = [];
-
-  csv()
-  .fromFile(vendorPath)
-  .on('json',(jsonObj)=>{
-    var srcKeys = ['Booth','Company'];
-    var destKeys = ['booth','name'];
-    var jsonStrip = _.pick(jsonObj, srcKeys);
-    var jsonClean = {};
-
-    _.each(srcKeys, (key, idx)=>{
-      jsonClean[destKeys[idx]] = jsonStrip[key];
-    });
-
-    jsonClean['seq'] = _.findIndex(boothSeq, (item)=>{
-      return item == jsonObj['Booth'];
-    });
-
-    console.log(jsonClean['seq'],jsonObj['Booth']);
-
-    vendorOut.push(jsonClean);
-  })
-  .on('done',(error)=>{
-      vendorOut = _.uniqBy(vendorOut, 'name');
-
-      jsonfile.writeFile(vendorJson, vendorOut, function (err) {
-        console.error(err);
-      })
-      console.log('Done converting vendors!');
-  })
-}
-
-function convertMember(memberPath, memberJson){
-  var memberOut = []
-
-  csv()
-  .fromFile(memberPath)
-  .on('json',(jsonObj)=>{
-    var srcKeys = ['Company','State'];
-    var destKeys = ['name','state'];
-    var jsonStrip = _.pick(jsonObj,srcKeys)
-    var jsonClean = {};
-
-    _.each(srcKeys, (key, idx)=>{
-      jsonClean[destKeys[idx]] = jsonStrip[key];
-    });
-
-    memberOut.push(jsonClean);
-  })
-  .on('done',(error)=>{
-    /* Not sure why this was happening here
-      _.each(memberMods, (mod) => {
-          memberOut.push(mod);
-      });*/
-
-      memberOut = _.uniqBy(memberOut, 'name');
-
-      jsonfile.writeFile(memberJson, memberOut, function (err) {
-        console.error(err)
-      });
-
-      console.log('Done converting members!')
-  })
 }

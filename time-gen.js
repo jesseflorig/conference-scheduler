@@ -1,53 +1,26 @@
-const year = "2018"
-const _ = require('lodash');
+// Step 2 of 6: Generate time slots from a schedule
+
+const year = "2019"
+const fs = require("fs")
+const { each } = require('lodash');
 const moment = require('moment');
 const jsonfile = require('jsonfile');
 
-const scheduleJson = `data/${year}/time-slots.json`;
-const rotationLength = 9 /* minutes */
-const breakLimit = 90 /* minutes */
+const dataPath = "/Users/jesse/Dropbox/Documents/BKBG/Rotations"
+const schedulePath = `${dataPath}/${year}/schedule.json`
+const timeSlotsPath = `${dataPath}/${year}/time-slots.json`
+const rotationLength = 8 /* minutes */
+const breakLimit = 80 /* minutes */
 
-/* 2017
-const schedule = [
-  {
-    date: "October 4, 2017",
-    groups: [
-      { name: 'B', start: '9:15', end: '12:25' },
-      { name: 'A', start: '13:30', end: '17:30' }
-    ]
-  },
-  {
-    date: "October 5, 2017",
-    groups: [
-      { name: 'A', start: '10:15', end: '12:45' },
-      { name: 'B', start: '14:15', end: '17:30' }
-    ]
-  }
-];
-*/
+const scheduleData = fs.readFileSync(schedulePath,"utf-8")
+const schedule = JSON.parse(scheduleData)
 
-const schedule = [
-  {
-    date: "September 27, 2018",
-    groups: [
-      { name: "B", start: "9:30", end: "13:00" },
-      { name: "A", start: "14:00", end: "18:30" },
-    ]
-  },
-  {
-    date: "September 28, 2018",
-    groups: [
-      { name: "A", start: "9:40", end: "13:15" },
-      { name: "B", start: "14:15", end: "18:25" },
-    ]
-  }
-]
-
-_.each(schedule, (day) => {
+each(schedule, (day) => {
   var displayDate = moment(day.date).format('dddd, MMMM Do YYYY');
-  //console.log(`Schedule for ${displayDate}:`);
-  _.each(day.groups, (group)=>{
-    //console.log(`Group ${group.name} from ${group.start} to ${group.end}`);
+  console.log(`Schedule for ${displayDate}:`);
+  console.log("Day groups", day.groups)
+  each(day.groups, (group)=>{
+    console.log(`Group ${group.name} from ${group.start} to ${group.end}`);
     group.timeSlots = [];
     var startTime = `${day.date} ${group.start}`;
     var endTime = `${day.date} ${group.end}`;
@@ -69,7 +42,7 @@ _.each(schedule, (day) => {
                           .duration(meetingSlot.diff(lastBreak))
                           .asMinutes();
         if(duration >= breakLimit) {
-          //console.log(`Adding BREAK at ${moment(meetingSlot).format("h:mm a")}`);
+          console.log(`Adding BREAK at ${moment(meetingSlot).format("h:mm a")}`);
           group.timeSlots.push({
             timeCode: moment(meetingSlot).format('DDHHmm'),
             time: moment(meetingSlot).format('h:mm a'),
@@ -77,7 +50,7 @@ _.each(schedule, (day) => {
           })
           lastBreak = meetingSlot;
         } else {
-          //console.log(`Adding time slot: ${moment(meetingSlot).format('h:mm a')}`);
+          console.log(`Adding time slot: ${moment(meetingSlot).format('h:mm a')}`);
           group.timeSlots.push({
             timeCode: moment(meetingSlot).format('DDHHmm'),
             time: moment(meetingSlot).format('h:mm a'),
@@ -90,7 +63,7 @@ _.each(schedule, (day) => {
   });
 });
 
-jsonfile.writeFile(scheduleJson, schedule, function (err) {
-  console.error(err)
+jsonfile.writeFile(timeSlotsPath, schedule, function (err) {
+  err && console.error(`Error: ${err}`)
 })
 console.log('Done creating time slots!')

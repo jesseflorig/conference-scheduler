@@ -4,12 +4,14 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "node convert.js && node time-gen.js && node group.js && node index.js && node output.js && node output2.js && echo 'Finished!'",
+    "build": "node convert.js && node time-gen.js && node group.js && npm run rebuild'",
+    "rebuild": "node index.js && node output.js && node output2.js && echo 'Finished!'",
     "convert": "node convert.js",
     "time": "node time-gen.js",
     "group": "node group.js",
     "start": "node index.js",
     "output": "node output.js",
+    "output2": "node output2.js",
     "test": "node test.js"
   },
   "author": "",
